@@ -1,7 +1,5 @@
 const db = require("../config/db");
 async function getAllSensors(req, res) {
-  console.log("I am in the controller");
-
   try {
     const result = await db.query(
       "SELECT * FROM sensors ORDER BY created_at DESC",
