@@ -1,4 +1,4 @@
-const db = require("./config/db");
+const db = require("../config/db");
 
 async function insertSensorData(sensorId, value) {
   const query = `INSERT INTO sensors(sensor_id , value)
