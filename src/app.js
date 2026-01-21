@@ -1,8 +1,10 @@
 const express = require("express");
 const app = express();
+const { logger } = require("./middleware/logger");
 
 // parse JSON bodies
 app.use(express.json());
+app.use(logger);
 
 // import routes
 const sensorsRoutes = require("./routes/sensors.routes");
