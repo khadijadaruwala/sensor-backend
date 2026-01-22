@@ -9,7 +9,7 @@ client.on("connect", () => {
 
 client.on("message", async (topic, message) => {
   const data = JSON.parse(message.toString());
-  await sensorService.processSensorData(data);
+  await sensorService.createSensor(data);
 });
 
 module.exports = client;
