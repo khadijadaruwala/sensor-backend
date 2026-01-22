@@ -35,17 +35,23 @@ async function updateSensor(id, data) {
 
 /* READ ALL */
 async function getAllSensors() {
-  const result = await db.query(
-    "SELECT * FROM sensors ORDER BY created_at DESC",
-  );
-  return result.rows;
+  try {
+    const result = await db.query(
+      "SELECT * FROM sensors ORDER BY created_at DESC",
+    );
+    return result.rows;
+  } catch (error) {
+    throw error;
+  }
 }
 
 /* READ ONE */
 async function getSensorById(id) {
-  const result = await db.query("SELECT * FROM sensors WHERE id = $1;", [id]);
-
-  return result;
+  try {
+    return await db.query("SELECT * FROM sensors WHERE id = $1;", [id]);
+  } catch (error) {
+    throw error;
+  }
 }
 
 /* DELETE */

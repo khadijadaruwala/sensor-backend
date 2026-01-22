@@ -8,8 +8,12 @@ client.on("connect", () => {
 });
 
 client.on("message", async (topic, message) => {
-  const data = JSON.parse(message.toString());
-  await sensorService.createSensor(data);
+  try {
+    const data = JSON.parse(message.toString());
+    await sensorService.createSensor(data);
+  } catch (error) {
+    console.error("MQTT processing failed:", error.message);
+  }
 });
 
 module.exports = client;
