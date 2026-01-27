@@ -1,12 +1,15 @@
 const { Pool } = require("pg");
 
+/**
+ * Connection pool reuses DB connections.
+ * This is faster and safer than opening a new connection every query.
+ */
+
 const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  connectionString: process.env.DATABASE_URL,
 });
+
+pool.on("connect", () => console.log("✅ DB connected"));
 
 pool.query("SELECT NOW()", (err, res) => {
   if (err) console.error("DB connection failed", err);

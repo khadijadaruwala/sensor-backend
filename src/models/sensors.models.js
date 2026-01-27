@@ -1,33 +1,59 @@
 const db = require("../config/db");
 
 /* CREATE */
-async function insertSensor(data) {
+async function createSensor(reading) {
+  console.log(`-----------Model reading: ${reading}`);
+
   const query = `
-    INSERT INTO sensors (sensor_id, value)
-    VALUES ($1, $2)
-    RETURNING *
+    INSERT INTO sensor_readings (device_id, humidity, temperature, pressure, recorded_at)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING *;
   `;
-  return db.query(query, [data.sensorId, data.value]);
+
+  const values = [
+    reading.deviceId,
+    reading.humidity,
+    reading.temperature,
+    reading.pressure,
+    reading.timestamp,
+  ];
+
+  return db.query(query, values);
 }
 
 /* UPDATE */
-async function updateSensor(id, data) {
+async function updateSensor(id, reading) {
   const query = `
-    UPDATE sensors
-    SET value = $1
-    WHERE id = $2
-    RETURNING *
+    UPDATE sensor_readings
+    SET humidity = $1, temperature = $2, pressure = $3, recorded_at = $4 WHERE id = $5
+    RETURNING *;
   `;
-  return await db.query(query, [data.value, id]);
+
+  return db.query(query, [
+    reading.humidity,
+    reading.temperature,
+    reading.pressure,
+    reading.timestamp,
+    id,
+  ]);
 }
 
 /* READ ALL */
 async function getAllSensors() {
   try {
-    const result = await db.query(
-      "SELECT * FROM sensors ORDER BY created_at DESC",
-    );
-    return result.rows;
+    let query = `SELECT * FROM sensor_readings`;
+    const values = [];
+
+    if (deviceId) {
+      values.push(deviceId);
+      query += ` WHERE device_id = $1`;
+    }
+
+    values.push(limit);
+    query += ` ORDER BY recorded_at DESC LIMIT $${values.length}`;
+
+    const result = await db.query(query, values);
+    return result;
   } catch (error) {
     throw error;
   }
@@ -36,7 +62,7 @@ async function getAllSensors() {
 /* READ ONE */
 async function getSensorById(id) {
   try {
-    return await db.query("SELECT * FROM sensors WHERE id = $1;", [id]);
+    return await db.query(`SELECT * FROM sensor_readings WHERE id = $1`, [id]);
   } catch (error) {
     throw error;
   }
@@ -44,11 +70,13 @@ async function getSensorById(id) {
 
 /* DELETE */
 async function deleteSensor(id) {
-  await db.query("DELETE FROM sensors WHERE id = $1", [id]);
+  return db.query(`DELETE FROM sensor_readings WHERE id = $1 RETURNING *`, [
+    id,
+  ]);
 }
 
 module.exports = {
-  insertSensor,
+  createSensor,
   updateSensor,
   getAllSensors,
   getSensorById,

@@ -1,7 +1,21 @@
-const sensorModel = require("../models/sensors.models");
+const model = require("../models/sensors.models");
+const { sensorReadingSchema } = require("../utils/sensors.validator");
 
-async function createSensor(data) {
-  return sensorModel.insertSensor(data);
+/**
+ * Validates payload then stores it.
+ * Missing/invalid fields -> throws error with status 400.
+ */
+
+async function createSensor(payload) {
+  console.log(`----------Service file payload:${payload}`);
+
+  const parsed = sensorReadingSchema.safeParse(payload);
+
+  if (!parsed.success) {
+    throw new AppError("Invalid sensor payload", 400);
+  }
+
+  return model.createSensor(parsed.data);
 }
 
 async function getAllSensors() {
@@ -16,8 +30,13 @@ async function getSensorById(id) {
   return result;
 }
 
-async function modifySensor(id, data) {
-  return sensorModel.updateSensor(id, data);
+async function modifySensor(id, payload) {
+  const parsed = sensorReadingSchema.safeParse(payload);
+
+  if (!parsed.success) {
+    throw new AppError("Invalid sensor payload", 400);
+  }
+  return model.update(id, parsed.data);
 }
 
 async function removeSensor(id) {
