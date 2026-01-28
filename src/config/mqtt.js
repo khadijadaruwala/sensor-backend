@@ -21,8 +21,6 @@ function startMqttSubscriber() {
 
   client.on("message", async (topic, message) => {
     try {
-      console.log(`-------MQTT message : ${message}`);
-
       const payload = JSON.parse(message.toString());
       await service.createSensor(payload);
       console.log(
@@ -43,4 +41,6 @@ function startMqttSubscriber() {
 module.exports = { startMqttSubscriber };
 
 /* Command to publish the mqtt from the terminal to the broker:
-mosquitto_pub -h test.mosquitto.org -t mine/sensors -m '{"sensorId":"AQS-103","value":500}' */
+mosquitto_pub -h broker.emqx.io \
+  -t TEST_CLIMATE_SENSOR_DATA \
+  -m '{"deviceId":"DEV-002","timestamp":"2026-01-26T10:15:30Z","humidity":53.2,"temperature":21.4,"pressure":110}'*/

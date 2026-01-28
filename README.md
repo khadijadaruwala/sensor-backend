@@ -1,25 +1,32 @@
 # Sensor Data Backend (Node.js + PostgreSQL + MQTT)
 
-An **end-to-end real-world backend system** that simulates how IoT sensor data (like air-quality sensors) is ingested via **MQTT**, processed using **Node.js**, stored in **PostgreSQL**, and exposed through a **REST API**.
+An end-to-end IoT backend system that simulates how industrial sensor data is:
+
+✔ Collected in real time via MQTT
+✔ Processed using Node.js
+✔ Stored in PostgreSQL
+✔ Exposed through a REST API
 
 ## 🚀 What This Project Does
 
-✔ Receives live sensor data via **MQTT**  
+✔ Receives live sensor data via **MQTT**
+✔ Validates incoming data using **Zod**
 ✔ Stores sensor readings in **PostgreSQL**  
-✔ Exposes stored data through an **Express REST API**  
+✔ Exposes stored data through an **Express REST API** for **CRUD** operations
 ✔ Uses industry-standard backend architecture  
 ✔ Fully runnable locally
 
 ## 🏗️ Tech Stack
 
-| Layer         | Technology          |
-| ------------- | ------------------- |
-| Runtime       | Node.js             |
-| Web Framework | Express.js          |
-| Database      | PostgreSQL          |
-| Messaging     | MQTT (Mosquitto)    |
-| Dev Tools     | nodemon, Git        |
-| Architecture  | MVC + Service Layer |
+| Layer         | Technology             |
+| ------------- | ---------------------- |
+| Runtime       | Node.js                |
+| Web Framework | Express.js             |
+| Database      | PostgreSQL             |
+| Messaging     | MQTT (EMQX broker)     |
+| Validation    | Zod                    |
+| Dev Tools     | nodemon, Git, DataGrip |
+| Architecture  | MVC + Service Layer    |
 
 ## 📁 Project Structure
 
@@ -38,7 +45,11 @@ sensor-backend/
 │   ├── services/
 │   │   └── sensors.service.js
 │   └── models/
-│       └── sensors.model.js
+│   │     └── sensors.model.js
+│   ├── utils/
+│   │   └── appError.js
+│   │   └── sensors.validator.js
+|
 ├── package.json
 ├── README.md
 └── .gitignore
@@ -47,16 +58,18 @@ sensor-backend/
 ## 🛠️ Architecture Flow
 
 ```txt
-MQTT Sensor
-   ↓
-MQTT Broker
-   ↓
-Node.js MQTT Client
-   ↓
-Service Layer
-   ↓
+IoT Device / Simulator
+        ↓
+MQTT Broker (broker.emqx.io)
+Topic: TEST_CLIMATE_SENSOR_DATA
+        ↓
+Node.js MQTT Subscriber
+        ↓
+Service Layer (Validation + Logic)
+        ↓
 PostgreSQL Database
-   ↓
+Table: sensor_readings
+        ↓
 REST API (Express)
 
 ```
@@ -72,19 +85,28 @@ psql postgres
 ### 2️⃣ Create database
 
 ```sql
-CREATE DATABASE sensors_db;
+CREATE DATABASE sensor_monitoring_db;
 \c sensors_db
 ```
 
 ### 3️⃣ Create table
 
 ```sql
-CREATE TABLE sensors (
-  id SERIAL PRIMARY KEY,
-  sensor_id TEXT,
-  value NUMERIC,
-  created_at TIMESTAMP DEFAULT NOW()
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TABLE sensor_readings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  device_id TEXT NOT NULL,
+  temperature NUMERIC(5,2) NOT NULL,
+  humidity NUMERIC(5,2) NOT NULL,
+  pressure NUMERIC(8,2) NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  ingested_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE INDEX idx_sensor_device_id ON sensor_readings(device_id);
+CREATE INDEX idx_sensor_device_time ON sensor_readings(device_id, recorded_at DESC);
+CREATE INDEX idx_sensor_recorded_at ON sensor_readings(recorded_at DESC);
 ```
 
 ## 📦 Install Dependencies
@@ -114,16 +136,18 @@ nodemon src/server.js
 You should see:
 
 ```bash
-Server running on port 3000
+DB connected
 Connected to MQTT broker
+Server running on port 8000
 ```
 
 ## 🔌 Send Test Sensor Data (MQTT)
 
 ```bash
-/opt/homebrew/opt/mosquitto/bin/mosquitto_pub \
--t mine/sensors \
--m '{"sensorId":"AQS-101","value":415}'
+mosquitto_pub -h broker.emqx.io \
+-t TEST_CLIMATE_SENSOR_DATA \
+-m '{"deviceId":"DEV-001","timestamp":"2026-01-22T10:15:30Z","temperature":28.4,"humidity":61.2,"pressure":101}'
+
 ```
 
 - Data is received
@@ -131,33 +155,60 @@ Connected to MQTT broker
 
 ## 🌐 API Endpoint
 
-Get all sensor readings
+| Method | Endpoint       | Description    |
+| ------ | -------------- | -------------- |
+| POST   | `/sensors`     | Insert reading |
+| GET    | `/sensors`     | List readings  |
+| GET    | `/sensors/:id` | Get one        |
+| PUT    | `/sensors/:id` | Update         |
+| DELETE | `/sensors/:id` | Delete         |
+
+Example POST body:
 
 ```bash
-GET http://localhost:3000/sensors
+{
+  "deviceId": "DEV-001",
+  "timestamp": "2026-01-22T10:15:30Z",
+  "temperature": 28.4,
+  "humidity": 61.2,
+  "pressure": 101
+}
+
 ```
 
-Example response:
+## ✔ Validation
+
+Uses Zod schema:
+
+✔ Required fields
+✔ ISO datetime validation
+✔ Numeric sensor values
+
+Invalid payload → 400 Bad Request
+
+## ⏱ Timestamp Handling
+
+We use:
 
 ```bash
-[
-  {
-    "sensor_id": "AQS-101",
-    "value": 415,
-    "created_at": "2025-01-20T10:15:00.000Z"
-  }
-]
+TIMESTAMPTZ
 ```
 
-## 🧪 Verify Database Data
+Because:
+✔ Handles timezones automatically
+✔ Avoids ambiguity in distributed systems
 
-```bash
-psql sensors_db
-```
+## 🚨 Error Handling
 
-```bash
-SELECT * FROM sensors;
-```
+Central error middleware ensures clean error responses and prevents server crashes.
+
+## 📈 Database Index Strategy
+
+| Index                   | Purpose                    |
+| ----------------------- | -------------------------- |
+| device_id               | Device lookup              |
+| device_id + recorded_at | Latest readings per device |
+| recorded_at             | Time-based queries         |
 
 ## 🧩 Key Concepts Demonstrated
 

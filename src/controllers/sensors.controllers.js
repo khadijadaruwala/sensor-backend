@@ -49,7 +49,7 @@ async function updateSensor(req, res, next) {
 // DELETE /sensors/:id
 async function deleteSensor(req, res, next) {
   try {
-    const result = await service.removeSensor(req.params.id);
+    const result = await service.deleteSensor(req.params.id);
     if (!result.rows[0]) return res.status(404).json({ message: "Not found" });
     res.status(204).send();
     res.json({ message: "Deleted", deleted: result.rows[0] });

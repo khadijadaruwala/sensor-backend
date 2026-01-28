@@ -2,8 +2,6 @@ const db = require("../config/db");
 
 /* CREATE */
 async function createSensor(reading) {
-  console.log(`-----------Model reading: ${reading}`);
-
   const query = `
     INSERT INTO sensor_readings (device_id, humidity, temperature, pressure, recorded_at)
     VALUES ($1, $2, $3, $4, $5)
@@ -29,7 +27,7 @@ async function updateSensor(id, reading) {
     RETURNING *;
   `;
 
-  return db.query(query, [
+  return await db.query(query, [
     reading.humidity,
     reading.temperature,
     reading.pressure,
@@ -39,7 +37,7 @@ async function updateSensor(id, reading) {
 }
 
 /* READ ALL */
-async function getAllSensors() {
+async function getAllSensors({ deviceId, limit = 100 }) {
   try {
     let query = `SELECT * FROM sensor_readings`;
     const values = [];
@@ -70,9 +68,11 @@ async function getSensorById(id) {
 
 /* DELETE */
 async function deleteSensor(id) {
-  return db.query(`DELETE FROM sensor_readings WHERE id = $1 RETURNING *`, [
-    id,
-  ]);
+  const result = await db.query(
+    `DELETE FROM sensor_readings WHERE id = $1 RETURNING *`,
+    [id],
+  );
+  return result;
 }
 
 module.exports = {

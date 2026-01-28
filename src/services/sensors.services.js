@@ -1,14 +1,7 @@
 const model = require("../models/sensors.models");
 const { sensorReadingSchema } = require("../utils/sensors.validator");
 
-/**
- * Validates payload then stores it.
- * Missing/invalid fields -> throws error with status 400.
- */
-
 async function createSensor(payload) {
-  console.log(`----------Service file payload:${payload}`);
-
   const parsed = sensorReadingSchema.safeParse(payload);
 
   if (!parsed.success) {
@@ -18,12 +11,12 @@ async function createSensor(payload) {
   return model.createSensor(parsed.data);
 }
 
-async function getAllSensors() {
-  return sensorModel.getAllSensors();
+async function getAllSensors(query) {
+  return model.getAllSensors(query);
 }
 
 async function getSensorById(id) {
-  const result = await sensorModel.getSensorById(id);
+  const result = await model.getSensorById(id);
   if (result.rows.length === 0) {
     throw new AppError("Sensor not found", 404);
   }
@@ -36,14 +29,15 @@ async function modifySensor(id, payload) {
   if (!parsed.success) {
     throw new AppError("Invalid sensor payload", 400);
   }
-  return model.update(id, parsed.data);
+  return model.updateSensor(id, parsed.data);
 }
 
-async function removeSensor(id) {
-  const result = sensorModel.deleteSensor(id);
+async function deleteSensor(id) {
+  const result = model.deleteSensor(id);
   if (result.affected === 0) {
-    throw new AppError("User not found", 404);
+    throw new AppError("Sensor not found", 404);
   }
+  return result;
 }
 
 module.exports = {
@@ -51,5 +45,5 @@ module.exports = {
   getAllSensors,
   getSensorById,
   modifySensor,
-  removeSensor,
+  deleteSensor,
 };
