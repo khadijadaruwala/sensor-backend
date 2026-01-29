@@ -7,13 +7,14 @@ async function createSensor(reading) {
     VALUES ($1, $2, $3, $4, $5)
     RETURNING *;
   `;
+  const recorded_at = new Date(reading.timestamp).toISOString();
 
   const values = [
     reading.deviceId,
     reading.humidity,
     reading.temperature,
     reading.pressure,
-    reading.timestamp,
+    recorded_at,
   ];
 
   return db.query(query, values);
@@ -26,12 +27,13 @@ async function updateSensor(id, reading) {
     SET humidity = $1, temperature = $2, pressure = $3, recorded_at = $4 WHERE id = $5
     RETURNING *;
   `;
+  const recorded_at = new Date(reading.timestamp).toISOString();
 
   return await db.query(query, [
     reading.humidity,
     reading.temperature,
     reading.pressure,
-    reading.timestamp,
+    recorded_at,
     id,
   ]);
 }

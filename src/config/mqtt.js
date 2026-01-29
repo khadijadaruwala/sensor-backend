@@ -1,9 +1,8 @@
 const mqtt = require("mqtt");
 const service = require("../services/sensors.services");
 
-/**
- * Subscribes to MQTT topic and stores incoming sensor readings to PostgreSQL.
- */
+// Subscribes to MQTT topic and stores incoming sensor readings to PostgreSQL.
+
 function startMqttSubscriber() {
   const client = mqtt.connect(process.env.MQTT_BROKER, {
     clientId: process.env.MQTT_CLIENT_ID || `sensor-sub-${Date.now()}`,
